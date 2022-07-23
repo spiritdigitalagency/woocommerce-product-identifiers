@@ -130,6 +130,14 @@ class Sda_Woo_Product_Identifiers {
 		$this->loader->add_action( 'woocommerce_process_product_meta', $plugin_admin, 'save_product' );
 		$this->loader->add_action( 'woocommerce_save_product_variation', $plugin_admin, 'save_product', 10, 2 );
 		$this->loader->add_action( 'request', $plugin_admin, 'extend_search', 20);
+		$this->loader->add_action( 'woocommerce_csv_product_import_mapping_options', $plugin_admin, 'export_columns');
+		$this->loader->add_action( 'woocommerce_csv_product_import_mapping_default_columns', $plugin_admin, 'import_columns');
+		$this->loader->add_filter( 'woocommerce_product_import_pre_insert_product_object', $plugin_admin, 'import_data', 10, 2 );
+		$this->loader->add_action( 'woocommerce_product_export_column_names', $plugin_admin, 'export_columns');
+		$this->loader->add_action( 'woocommerce_product_export_product_default_columns', $plugin_admin, 'export_columns');
+		foreach ( self::get_fields() as $field ) {
+			$this->loader->add_filter( 'woocommerce_product_export_product_column_' . $field['key'], $plugin_admin, 'export_data', 10, 3 );
+		}
 
 	}
 
@@ -196,7 +204,7 @@ class Sda_Woo_Product_Identifiers {
 	 */
 	public static function get_fields() {
 
-		return array(
+		return apply_filters( 'sda_woocommerce_identifier_register_fields', array(
 			'upc' => array(
 				'key'         => '_sda_upc',
 				'label'       => __('UPC', 'sda-woo-product-identifiers'),
@@ -215,7 +223,7 @@ class Sda_Woo_Product_Identifiers {
 				'searchable'  => true,
 				'description' => __('Japanese Article Number (JAN). Used only in Japan.', 'sda-woo-product-identifiers')
 			),
-			'sbn' => array(
+			'isbn' => array(
 				'key'         => '_sda_isbn',
 				'label'       => __('ISBN', 'sda-woo-product-identifiers'),
 				'searchable'  => true,
@@ -227,7 +235,13 @@ class Sda_Woo_Product_Identifiers {
 				'searchable'  => true,
 				'description' => __('Manufacturer Part Number (MPN). Used globally.', 'sda-woo-product-identifiers')
 			),
-		);
+			'skroutz_feed' => array(
+				'key'         => '_sda_skroutz_feed',
+				'label'       => __('Skroutz Feed ID', 'sda-woo-product-identifiers'),
+				'searchable'  => false,
+				'description' => __('Used to maintain backward compatible Skroutz IDs', 'sda-woo-product-identifiers')
+			),
+		));
 
 	}
 

@@ -42,17 +42,6 @@ class Sda_Woo_Product_Identifiers_Admin {
 	}
 
 	/**
-	 * Get registered fields to handle
-	 *
-	 * @since       1.0.0
-	 * @return      array
-	 */
-	public function registered_fields() {
-		$fields = Sda_Woo_Product_Identifiers::get_fields();
-		return apply_filters( 'sda_woocommerce_identifier_register_fields', $fields);
-	}
-
-	/**
 	 * Add identifier fields for product
 	 *
 	 * @since       1.0.0
@@ -86,7 +75,7 @@ class Sda_Woo_Product_Identifiers_Admin {
 	 */
 	protected function display_fields( $post_id ) {
 
-		foreach ( $this->registered_fields() as $field ) {
+		foreach ( Sda_Woo_Product_Identifiers::get_fields() as $field ) {
 			woocommerce_wp_text_input(
 				array(
 					'id'          => $field['key'] . '[' . $post_id . ']',
@@ -131,7 +120,7 @@ class Sda_Woo_Product_Identifiers_Admin {
 	 */
 	public function save_product( $post_id ) {
 
-		foreach ( $this->registered_fields() as $field ) {
+		foreach ( Sda_Woo_Product_Identifiers::get_fields() as $field ) {
 			$field_data = $_POST[ $field['key'] ];
 			if ( ! isset( $field_data ) ) {
 				continue;
@@ -139,6 +128,69 @@ class Sda_Woo_Product_Identifiers_Admin {
 			$this->save_field( $post_id, $field['key'], $field_data );
 		}
 
+	}
+
+	/**
+	 * Prepare columns for csv export file
+	 *
+	 * @since       1.0.0
+	 * @return      array
+	 */
+	public function export_columns( $columns ) {
+
+		foreach ( Sda_Woo_Product_Identifiers::get_fields() as $field ) {
+			$columns[$field['key']] = $field['label'];
+		}
+
+		return $columns;
+
+	}
+
+	/**
+	 * Prepare data for extra columns
+	 *
+	 * @since       1.0.0
+	 * @return      array
+	 */
+	public function export_data( $value, $product, $column_id ) {
+		return $product->get_meta( $column_id, true, 'edit' );
+	}
+
+	/**
+	 * Prepare columns for csv import file
+	 *
+	 * @since       1.0.0
+	 * @return      array
+	 */
+	public function import_columns( $columns ) {
+
+		foreach ( Sda_Woo_Product_Identifiers::get_fields() as $field ) {
+			$columns[$field['label']] = $field['key'];
+		}
+
+		return $columns;
+
+	}
+
+	/**
+	 * Prepare data for extra columns
+	 *
+	 * @since       1.0.0
+	 * @return      array
+	 */
+	public function import_data( $product, $data ) {
+
+		if ( is_a( $product, 'WC_Product' ) ) {
+
+			foreach ( Sda_Woo_Product_Identifiers::get_fields() as $field ) {
+				if ( array_key_exists($field['key'], $data) && ! empty( $data[$field['key']] ) ) {
+					$product->update_meta_data( $field['key'], $data[$field['key']] );
+				}
+			}
+
+		}
+
+		return $product;
 	}
 
 	/**
@@ -154,14 +206,14 @@ class Sda_Woo_Product_Identifiers_Admin {
 		}
 		global $typenow;
 		global $pagenow;
-		if('product' !== $typenow || 'edit.php' !== $pagenow ) {
+		if('product' !== $typenow || 'edit.php' !== $pagenow || empty($_GET['s']) ) {
 			return $query_vars;
 		}
 		global $wpdb;
 
 		$search_term = esc_sql( sanitize_text_field( $_GET['s'] ) );
 		$meta_keys   = [];
-		foreach ( $this->registered_fields() as $field ) {
+		foreach ( Sda_Woo_Product_Identifiers::get_fields() as $field ) {
 			if ( ! isset( $field['searchable'] ) || $field['searchable'] == false) {
 				continue;
 			}
